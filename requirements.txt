@@ -1,0 +1,5 @@
+# VIT Student MCP — Dependencies
+mcp
+requests
+beautifulsoup4
+playwright

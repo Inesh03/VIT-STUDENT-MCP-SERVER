@@ -1,6 +1,6 @@
 import json
 from mcp.server.fastmcp import FastMCP
-from database import get_connection, create_tables
+from vit_student_mcp.database import get_connection, create_tables
 
 # Initialize DB on startup
 create_tables()
@@ -307,6 +307,8 @@ def get_dashboard() -> str:
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
-if __name__ == "__main__":
+def main():
     mcp.run()
 
+if __name__ == "__main__":
+    main()

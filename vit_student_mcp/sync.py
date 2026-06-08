@@ -11,8 +11,7 @@ Reference: https://github.com/therealsujitk/android-vtop-chennai
 
 import getpass, base64, subprocess, sys, os, tempfile, json, time
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from database import get_connection, create_tables
+from vit_student_mcp.database import get_connection, create_tables
 
 from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
 
@@ -803,142 +802,145 @@ def save_to_db(courses, attendance, marks=None, exams=None, profile=None):
 #  INTERACTIVE CLI
 # ═══════════════════════════════════════════════════════════════════════════════
 
-if __name__ == "__main__":
-    print("=" * 55)
-    print("  VIT VTOP Sync (Playwright — WebView-style JS injection)")
-    print("=" * 55)
+def main():
+        print("=" * 55)
+        print("  VIT VTOP Sync (Playwright — WebView-style JS injection)")
+        print("=" * 55)
 
-    username = input("VTOP Username (Reg No): ").strip()
-    password = getpass.getpass("VTOP Password: ")
+        username = input("VTOP Username (Reg No): ").strip()
+        password = getpass.getpass("VTOP Password: ")
 
-    with sync_playwright() as pw:
-        print("\n🔄 Launching browser...")
-        browser, context, page = _launch_browser(pw)
+        with sync_playwright() as pw:
+            print("\n🔄 Launching browser...")
+            browser, context, page = _launch_browser(pw)
 
-        try:
-            # ── Step 1–2: Navigate & prelogin/setup ──
-            _navigate_to_login(page)
-
-            # ── Step 3: Detect captcha type ──
-            captcha_type = _detect_captcha_type(page)
-            print(f"  🔐 Captcha type: {captcha_type}")
-
-            if captcha_type == "DEFAULT":
-                import ddddocr
-                ocr = ddddocr.DdddOcr(show_ad=False)
-                
-                max_retries = 10
-                for attempt in range(max_retries):
-                    if attempt > 0:
-                        print(f"  🔄 Retrying login (Attempt {attempt + 1}/{max_retries})...")
-                        _navigate_to_login(page)
-                    
-                    # ── Step 4: Extract captcha image ──
-                    captcha_src = _get_default_captcha(page)
-                    print("  ✅ Captcha image extracted")
-
-                    captcha_data = captcha_src.split(",")[1]
-                    img_bytes = base64.b64decode(captcha_data)
-                    
-                    # Solve via OCR
-                    captcha_answer = ocr.classification(img_bytes).strip().upper()
-                    print(f"  🤖 OCR read: {captcha_answer}")
-                    
-                    # ── Step 5: Sign in ──
-                    print("  🔐 Logging in...")
-                    if _sign_in(page, username, password, captcha_answer):
-                        break
-                    else:
-                        print("  ❌ OCR guess was wrong (Invalid Captcha).")
-                else:
-                    raise ValueError("Failed to bypass captcha after 10 attempts.")
-
-            elif captcha_type == "GRECAPTCHA":
-                print("  ⚠️  Google reCAPTCHA detected — manual solve needed")
-                print("     Opening browser window for you to solve reCAPTCHA...")
-                # For reCAPTCHA, we need to show the browser
-                browser.close()
-                browser = pw.chromium.launch(headless=False)
-                context = browser.new_context(
-                    user_agent=(
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/124.0.0.0 Safari/537.36"
-                    ),
-                    ignore_https_errors=True,
-                )
-                page = context.new_page()
+            try:
+                # ── Step 1–2: Navigate & prelogin/setup ──
                 _navigate_to_login(page)
 
-                # Execute reCAPTCHA — mirrors VTOPService.executeCaptcha()
-                page.evaluate("""() => {
-                    function callBuiltValidation(token) {
-                        document.getElementById('gResponse').value = token;
-                    }
-                    var executeInterval = setInterval(function() {
-                        try {
-                            grecaptcha.execute();
-                            clearInterval(executeInterval);
-                        } catch (err) {}
-                    }, 500);
-                }""")
+                # ── Step 3: Detect captcha type ──
+                captcha_type = _detect_captcha_type(page)
+                print(f"  🔐 Captcha type: {captcha_type}")
 
-                captcha_answer = input("🔤 Solve reCAPTCHA in the browser, then press Enter: ").strip()
-                # Get the gResponse value
-                captcha_answer = page.evaluate("() => document.getElementById('gResponse').value")
-                
-                # ── Step 5: Sign in ──
-                print("🔐 Logging in...")
-                _sign_in(page, username, password, captcha_answer)
+                if captcha_type == "DEFAULT":
+                    import ddddocr
+                    ocr = ddddocr.DdddOcr(show_ad=False)
 
-            # ── Step 6: Get semesters ──
-            print("📅 Fetching semesters...")
-            sems = get_semesters(page)
-            for i, name in enumerate(sems):
-                print(f"  [{i}] {name}")
-            ch = int(input("Select semester: "))
-            sem_name = list(sems.keys())[ch]
-            sem_id = sems[sem_name]
-            print(f"  ✅ {sem_name}")
+                    max_retries = 10
+                    for attempt in range(max_retries):
+                        if attempt > 0:
+                            print(f"  🔄 Retrying login (Attempt {attempt + 1}/{max_retries})...")
+                            _navigate_to_login(page)
 
-            # ── Step 7: Download profile ──
-            print("👤 Downloading profile...")
-            profile = download_profile(page)
-            if profile.get("name"):
-                print(f"  ✅ Name: {profile['name']}")
-            if profile.get("cgpa"):
-                print(f"  ✅ CGPA: {profile['cgpa']} | Credits: {profile['total_credits']}")
+                        # ── Step 4: Extract captcha image ──
+                        captcha_src = _get_default_captcha(page)
+                        print("  ✅ Captcha image extracted")
 
-            # ── Step 8: Download courses ──
-            print("📚 Downloading courses...")
-            courses = download_courses(page, sem_id)
-            print(f"  ✅ {len(courses)} courses")
-            for c in courses:
-                print(f"     {c['code']} — {c['title']} ({c['type']})")
+                        captcha_data = captcha_src.split(",")[1]
+                        img_bytes = base64.b64decode(captcha_data)
 
-            # ── Step 9: Download attendance ──
-            print("📊 Downloading attendance...")
-            att = download_attendance(page, sem_id)
-            print(f"  ✅ {len(att)} records")
+                        # Solve via OCR
+                        captcha_answer = ocr.classification(img_bytes).strip().upper()
+                        print(f"  🤖 OCR read: {captcha_answer}")
 
-            # ── Step 10: Download marks ──
-            print("📝 Downloading marks...")
-            marks = download_marks(page, sem_id)
-            print(f"  ✅ {len(marks)} marks")
+                        # ── Step 5: Sign in ──
+                        print("  🔐 Logging in...")
+                        if _sign_in(page, username, password, captcha_answer):
+                            break
+                        else:
+                            print("  ❌ OCR guess was wrong (Invalid Captcha).")
+                    else:
+                        raise ValueError("Failed to bypass captcha after 10 attempts.")
 
-            # ── Step 11: Download exam schedule ──
-            print("📋 Downloading exam schedule...")
-            exams = download_exam_schedule(page, sem_id)
-            print(f"  ✅ {len(exams)} exams")
+                elif captcha_type == "GRECAPTCHA":
+                    print("  ⚠️  Google reCAPTCHA detected — manual solve needed")
+                    print("     Opening browser window for you to solve reCAPTCHA...")
+                    # For reCAPTCHA, we need to show the browser
+                    browser.close()
+                    browser = pw.chromium.launch(headless=False)
+                    context = browser.new_context(
+                        user_agent=(
+                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                            "AppleWebKit/537.36 (KHTML, like Gecko) "
+                            "Chrome/124.0.0.0 Safari/537.36"
+                        ),
+                        ignore_https_errors=True,
+                    )
+                    page = context.new_page()
+                    _navigate_to_login(page)
 
-            # ── Step 12: Save everything ──
-            print("💾 Saving to database...")
-            save_to_db(courses, att, marks, exams, profile)
+                    # Execute reCAPTCHA — mirrors VTOPService.executeCaptcha()
+                    page.evaluate("""() => {
+                        function callBuiltValidation(token) {
+                            document.getElementById('gResponse').value = token;
+                        }
+                        var executeInterval = setInterval(function() {
+                            try {
+                                grecaptcha.execute();
+                                clearInterval(executeInterval);
+                            } catch (err) {}
+                        }, 500);
+                    }""")
 
-            print("\n✅ Sync complete!")
+                    captcha_answer = input("🔤 Solve reCAPTCHA in the browser, then press Enter: ").strip()
+                    # Get the gResponse value
+                    captcha_answer = page.evaluate("() => document.getElementById('gResponse').value")
 
-        except Exception as e:
-            print(f"\n❌ Error: {e}")
-            raise
-        finally:
-            browser.close()
+                    # ── Step 5: Sign in ──
+                    print("🔐 Logging in...")
+                    _sign_in(page, username, password, captcha_answer)
+
+                # ── Step 6: Get semesters ──
+                print("📅 Fetching semesters...")
+                sems = get_semesters(page)
+                for i, name in enumerate(sems):
+                    print(f"  [{i}] {name}")
+                ch = int(input("Select semester: "))
+                sem_name = list(sems.keys())[ch]
+                sem_id = sems[sem_name]
+                print(f"  ✅ {sem_name}")
+
+                # ── Step 7: Download profile ──
+                print("👤 Downloading profile...")
+                profile = download_profile(page)
+                if profile.get("name"):
+                    print(f"  ✅ Name: {profile['name']}")
+                if profile.get("cgpa"):
+                    print(f"  ✅ CGPA: {profile['cgpa']} | Credits: {profile['total_credits']}")
+
+                # ── Step 8: Download courses ──
+                print("📚 Downloading courses...")
+                courses = download_courses(page, sem_id)
+                print(f"  ✅ {len(courses)} courses")
+                for c in courses:
+                    print(f"     {c['code']} — {c['title']} ({c['type']})")
+
+                # ── Step 9: Download attendance ──
+                print("📊 Downloading attendance...")
+                att = download_attendance(page, sem_id)
+                print(f"  ✅ {len(att)} records")
+
+                # ── Step 10: Download marks ──
+                print("📝 Downloading marks...")
+                marks = download_marks(page, sem_id)
+                print(f"  ✅ {len(marks)} marks")
+
+                # ── Step 11: Download exam schedule ──
+                print("📋 Downloading exam schedule...")
+                exams = download_exam_schedule(page, sem_id)
+                print(f"  ✅ {len(exams)} exams")
+
+                # ── Step 12: Save everything ──
+                print("💾 Saving to database...")
+                save_to_db(courses, att, marks, exams, profile)
+
+                print("\n✅ Sync complete!")
+
+            except Exception as e:
+                print(f"\n❌ Error: {e}")
+                raise
+            finally:
+                browser.close()
+
+if __name__ == "__main__":
+    main()

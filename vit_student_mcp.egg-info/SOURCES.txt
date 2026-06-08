@@ -1,0 +1,14 @@
+README.md
+pyproject.toml
+vit_student_mcp/__init__.py
+vit_student_mcp/database.py
+vit_student_mcp/inspect_db.py
+vit_student_mcp/seed.py
+vit_student_mcp/server.py
+vit_student_mcp/sync.py
+vit_student_mcp.egg-info/PKG-INFO
+vit_student_mcp.egg-info/SOURCES.txt
+vit_student_mcp.egg-info/dependency_links.txt
+vit_student_mcp.egg-info/entry_points.txt
+vit_student_mcp.egg-info/requires.txt
+vit_student_mcp.egg-info/top_level.txt

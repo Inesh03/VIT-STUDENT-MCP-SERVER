@@ -1,0 +1,3 @@
+[console_scripts]
+vit-mcp-serve = vit_student_mcp.server:main
+vit-mcp-sync = vit_student_mcp.sync:main

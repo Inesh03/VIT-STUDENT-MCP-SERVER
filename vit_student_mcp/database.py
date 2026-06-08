@@ -1,7 +1,8 @@
 import sqlite3
 import os
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.expanduser("~/.vit_student_mcp")
+os.makedirs(BASE_DIR, exist_ok=True)
 DB_PATH = os.path.join(BASE_DIR, "vit_student.db")
 
 def get_connection() -> sqlite3.Connection:

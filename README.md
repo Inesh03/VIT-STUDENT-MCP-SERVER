@@ -1,77 +1,91 @@
-# VIT Student MCP Server
+# 🎓 VIT Student MCP Server
 
-A powerful local Model Context Protocol (MCP) server designed for VIT students. It seamlessly scrapes your VTOP profile using a headless Playwright browser and exposes all your academic data (Marks, Attendance, Exams, Assignments, Timetable) to Claude Desktop as an AI assistant tool.
+[![PyPI version](https://badge.fury.io/py/vit-student-mcp.svg)](https://badge.fury.io/py/vit-student-mcp)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 
-**Key Features:**
-- **Auto-Captcha Solving**: Uses a lightweight Neural Network (`ddddocr`) to automatically solve VTOP captchas.
-- **Full Automation**: Injects JS exactly like the official Android App to safely extract data from VTOP.
-- **SQLite Caching**: Saves everything locally so the MCP server responds instantly to Claude without needing to hit VTOP repeatedly.
-- **Claude Integration**: Ask Claude questions like "What's my schedule tomorrow?", "Did I pass Cloud Computing?", or "Am I debarred in any subject?"
+**Turn Claude AI into your personal academic assistant.**
+
+The **VIT Student MCP Server** seamlessly bridges the gap between your university's portal (VTOP) and your local Claude Desktop app using the powerful Model Context Protocol (MCP). It silently scrapes your academic profile—Marks, Attendance, Timetable, Exams, and Assignments—and equips Claude with real-time access to your academic life.
+
+Ask Claude things like:
+- *"What's my schedule tomorrow?"*
+- *"Am I debarred in any subject?"*
+- *"How many more classes do I need to attend in Cloud Computing to hit 75%?"*
+- *"Did I get the marks for my recent CAT-1 exam?"*
 
 ---
 
-## 🛠️ Installation & Setup
+## ✨ Features
 
-### 1. Prerequisites
-You need **Python 3.9+** and `pip` installed on your machine.
-If you use Conda, it is highly recommended to create a new environment:
+- **🚀 1-Click Installation:** Now available on PyPI! Install globally with a single command.
+- **🤖 Auto-Captcha Bypass:** Uses a lightweight local neural network (`ddddocr`) to instantly solve VTOP login captchas. No manual typing required.
+- **🛡️ Secure & Local:** Your VTOP password is **never saved**. All scraped data is stored securely in a local SQLite file (`~/.vit_student_mcp/vit_student.db`) on your own hard drive.
+- **⚡ Lightning Fast:** By caching your data locally, Claude can answer your academic questions instantly without waiting for slow website loads.
+
+---
+
+## 🛠️ Installation
+
+### 1. Install the Package
+Open your terminal and install the package globally using `pip`:
 ```bash
-conda create -n vit-mcp python=3.11
-conda activate vit-mcp
+pip install vit-student-mcp
 ```
+*(If you use Conda or virtual environments, make sure your environment is activated first).*
 
-### 2. Install Dependencies
-Clone this repository and install the required packages:
-```bash
-git clone https://github.com/Inesh03/VIT-STUDENT-MCP-SERVER.git
-cd VIT-STUDENT-MCP-SERVER
-pip install -r requirements.txt
-```
-
-### 3. Install Playwright Browsers
-The scraper requires headless Chromium to run:
+### 2. Install Playwright Browsers
+The scraper requires a hidden Chromium browser to navigate VTOP:
 ```bash
 playwright install chromium
 ```
 
 ---
 
-## 🔄 How to Sync Your Data
-Before Claude can answer questions, you need to pull your latest data from VTOP into the local database.
+## 🔄 Syncing Your Data
 
-Run the sync script in your terminal:
+Before Claude can answer questions, you need to securely pull your data from VTOP into your local database. 
+
+Simply run this command anywhere in your terminal:
 ```bash
-python src/sync.py
+vit-mcp-sync
 ```
-You will be prompted to enter your Registration Number and Password. The script will open a hidden browser, solve the Captcha automatically, and download your entire academic profile!
+
+1. Enter your **Registration Number** and **Password**.
+2. Grab a coffee ☕. The script will open a hidden browser, solve the Captcha, bypass the login, and securely download your entire academic profile!
+
+*(Note: You should run this command whenever you want to update Claude with your latest marks or attendance).*
 
 ---
 
-## 🤖 Connecting to Claude Desktop
-To let Claude access your data, you need to add this project as an MCP Server.
+## 🧠 Connecting to Claude Desktop
+
+Now, let's give Claude the keys to your academic data.
 
 1. Open your Claude Desktop Configuration File:
    - **Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`
    - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-2. Add the following entry, making sure to replace the path with the actual absolute path to the project on your machine:
+
+2. Add the following configuration. Replace `/path/to/your/python` with the absolute path to the Python environment where you installed the package.
 
 ```json
 {
   "mcpServers": {
-    "vit-student": {
-      "command": "python",
+    "vit-academic-assistant": {
+      "command": "/path/to/your/python",
       "args": [
-        "/path/to/your/VIT-STUDENT-MCP-SERVER/src/server.py"
+        "-m",
+        "vit_student_mcp.server"
       ]
     }
   }
 }
 ```
-*(If you are using Conda, replace `"python"` with the absolute path to your Conda environment's python executable, e.g., `/opt/miniconda3/envs/vit-mcp/bin/python`)*
+*(Tip: To find your python path, run `which python` or `where python` in your terminal).*
 
-3. **Restart Claude Desktop**. You should now see the "plug" icon, meaning your VIT Assistant is ready!
+3. **Restart Claude Desktop**. You should now see the "plug" 🔌 icon in the chat bar, meaning your VIT Assistant is fully operational and ready to help!
 
 ---
 
-## ⚠️ Disclaimer
-This tool is entirely local. Your VTOP password is **never saved** anywhere, and your academic data is stored only in a local SQLite file (`vit_student.db`) on your own hard drive.
+## 📝 Disclaimer
+
+This tool is entirely local and open-source. It simulates a browser session to access your own data on your behalf. Your credentials are used strictly for the active session and are **never logged, tracked, or uploaded** to any third-party server.

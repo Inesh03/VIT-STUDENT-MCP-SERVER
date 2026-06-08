@@ -202,7 +202,7 @@ def _sign_in(page, username, password, captcha):
         code = result["error_code"]
         msg = result["error_message"]
         if code == 1:
-            raise ValueError(f"❌ {msg} — run again")
+            return False
         elif code == 2:
             raise ValueError(f"❌ {msg}")
         elif code == 3:
@@ -824,20 +824,34 @@ if __name__ == "__main__":
             print(f"  🔐 Captcha type: {captcha_type}")
 
             if captcha_type == "DEFAULT":
-                # ── Step 4: Extract captcha image ──
-                captcha_src = _get_default_captcha(page)
-                print("  ✅ Captcha image extracted")
+                import ddddocr
+                ocr = ddddocr.DdddOcr(show_ad=False)
+                
+                max_retries = 10
+                for attempt in range(max_retries):
+                    if attempt > 0:
+                        print(f"  🔄 Retrying login (Attempt {attempt + 1}/{max_retries})...")
+                        _navigate_to_login(page)
+                    
+                    # ── Step 4: Extract captcha image ──
+                    captcha_src = _get_default_captcha(page)
+                    print("  ✅ Captcha image extracted")
 
-                # Decode base64 and open in Preview (macOS)
-                captcha_data = captcha_src.split(",")[1]
-                img_bytes = base64.b64decode(captcha_data)
-                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-                    f.write(img_bytes)
-                    tmp_path = f.name
-                subprocess.Popen(["open", tmp_path])
-
-                captcha_answer = input("🔤 Enter captcha (check Preview window): ").strip()
-                os.unlink(tmp_path)
+                    captcha_data = captcha_src.split(",")[1]
+                    img_bytes = base64.b64decode(captcha_data)
+                    
+                    # Solve via OCR
+                    captcha_answer = ocr.classification(img_bytes).strip().upper()
+                    print(f"  🤖 OCR read: {captcha_answer}")
+                    
+                    # ── Step 5: Sign in ──
+                    print("  🔐 Logging in...")
+                    if _sign_in(page, username, password, captcha_answer):
+                        break
+                    else:
+                        print("  ❌ OCR guess was wrong (Invalid Captcha).")
+                else:
+                    raise ValueError("Failed to bypass captcha after 10 attempts.")
 
             elif captcha_type == "GRECAPTCHA":
                 print("  ⚠️  Google reCAPTCHA detected — manual solve needed")
@@ -872,10 +886,10 @@ if __name__ == "__main__":
                 captcha_answer = input("🔤 Solve reCAPTCHA in the browser, then press Enter: ").strip()
                 # Get the gResponse value
                 captcha_answer = page.evaluate("() => document.getElementById('gResponse').value")
-
-            # ── Step 5: Sign in ──
-            print("🔐 Logging in...")
-            _sign_in(page, username, password, captcha_answer)
+                
+                # ── Step 5: Sign in ──
+                print("🔐 Logging in...")
+                _sign_in(page, username, password, captcha_answer)
 
             # ── Step 6: Get semesters ──
             print("📅 Fetching semesters...")

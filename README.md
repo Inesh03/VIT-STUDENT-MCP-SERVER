@@ -1,7 +1,13 @@
 # 🎓 VIT Student MCP Server
 
-[![PyPI version](https://badge.fury.io/py/vit-student-mcp.svg)](https://badge.fury.io/py/vit-student-mcp)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+<p align="center">
+  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=22&duration=3000&pause=1000&color=3B82F6&center=true&vCenter=true&width=800&lines=Your+Personal+Academic+Assistant;Auto-solving+Captchas+with+AI...;Syncing+Marks,+Attendance,+and+Exams...;Seamlessly+Integrated+with+Claude!" alt="Typing SVG" />
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/vit-student-mcp/"><img src="https://badge.fury.io/py/vit-student-mcp.svg" alt="PyPI version"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python 3.9+"></a>
+</p>
 
 **Turn Claude AI into your personal academic assistant.**
 
